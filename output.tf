@@ -1,20 +1,20 @@
-output "gke_standard_cluster_names" {
-  description = "List of Standard cluster names"
-  value       = [for cluster in google_container_cluster.gke_standard : cluster.name]
+output "standard_cluster_names" {
+  description = "Names of all Standard GKE clusters created (non-Autopilot)."
+  value       = [for c in google_container_cluster.standard : c.name]
 }
-
-output "gke_standard_cluster_endpoints" {
-  description = "List of Standard cluster API endpoints"
-  value       = [for cluster in google_container_cluster.gke_standard : cluster.endpoint]
+output "autopilot_cluster_names" {
+  description = "Names of all Autopilot GKE clusters created."
+  value       = [for c in google_container_cluster.autopilot : c.name]
 }
-
-output "created_service_account_email" {
-  description = "Email of the created service account (if applicable)"
-  value       = var.use_existing_sa ? null : google_service_account.gke_sa[0].email
+output "cluster_endpoints" {
+  description = "Map of standard cluster names to their respective endpoint IPs."
+  value       = {
+    for k, c in google_container_cluster.standard : k => c.endpoint
+  }
 }
-
-output "created_service_account_id" {
-  description = "Account ID of the created service account"
-  value       = var.use_existing_sa ? null : google_service_account.gke_sa[0].account_id
+output "autopilot_endpoints" {
+  description = "Map of Autopilot cluster names to their respective endpoint IPs."
+  value       = {
+    for k, c in google_container_cluster.autopilot : k => c.endpoint
+  }
 }
-

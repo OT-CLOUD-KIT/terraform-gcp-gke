@@ -5,7 +5,7 @@
   [opstree_homepage]: https://opstree.github.io/
   [opstree_avatar]: https://img.cloudposse.com/150x150/https://github.com/opstree.png
 
-This Terraform configuration creates a Google Kubernetes Engine (GKE) cluster, optionally using an existing or new service account. It dynamically handles multiple clusters with custom node configurations, including machine type and disk size. The GKE service account is assigned necessary roles such as container.nodeServiceAccount and compute.instanceAdmin.v1. Additionally, the GKE service account is granted permissions to the control plane, allowing the cluster to function properly with required IAM roles.
+This Terraform configuration provisions multiple Google Kubernetes Engine (GKE) clusters, supporting both Standard and Autopilot modes based on input variables. For Standard clusters, it creates dedicated node pools with customizable machine types, disk sizes, and service accounts. The configuration allows either reusing an existing service account or creating a new one, and assigns all necessary IAM roles such as container.nodeServiceAccount, compute.instanceAdmin.v1, and iam.serviceAccountUser. It also grants GKE control plane permissions to the service account, ensuring proper authentication and operational access.
 
 ## Architecture
 
@@ -20,19 +20,17 @@ This Terraform configuration creates a Google Kubernetes Engine (GKE) cluster, o
 ## Usage
 
 ```hcl
-module "gke_standard_cluster" {
+module "gke" {
   source                = "./module"
-  create_gke            = var.create_gke
-  clusters              = var.clusters
   project_id            = var.project_id
   network               = var.network
   subnetwork            = var.subnetwork
+  clusters              = var.clusters
   use_existing_sa       = var.use_existing_sa
   service_account_email = var.service_account_email
   service_account_id    = var.service_account_id
   service_account_roles = var.service_account_roles
 }
-
 
 # Variable values
 
@@ -40,14 +38,11 @@ project_id = "nw-opstree-dev-landing-zone"
 region     = "us-central1"
 network    = "default"
 subnetwork = "default"
-create_gke = true
 
-# Set to true if using an existing service account
 use_existing_sa       = false
-service_account_email = "" # Required only if use_existing_sa = true
-service_account_id    = "gke-custom-service-account"
+service_account_id    = "gke-sa"
+service_account_email = "" # Leave empty if creating a new SA
 
-# Optional override of default roles
 service_account_roles = [
   "roles/container.nodeServiceAccount",
   "roles/compute.instanceAdmin.v1",
@@ -55,24 +50,22 @@ service_account_roles = [
 ]
 
 clusters = {
-  gke-cluster-1 = {
-    name               = "gke-cluster-1"
-    location           = "us-central1"
+  "dev-cluster" = {
+    name               = "dev-cluster"
+    location           = "us-central1-a"
     initial_node_count = 1
+    autopilot          = false
     node_config = {
       machine_type = "e2-medium"
-      disk_size_gb = 20
+      disk_size_gb = 50
+      disk_type    = "pd-standard"
     }
   }
 
-  gke-cluster-2 = {
-    name               = "gke-cluster-2"
-    location           = "us-east1"
-    initial_node_count = 1
-    node_config = {
-      machine_type = "e2-standard-2"
-      disk_size_gb = 20
-    }
+  "autopilot-cluster" = {
+    name      = "autopilot-cluster"
+    location  = "us-central1"
+    autopilot = true
   }
 }
 
@@ -84,7 +77,6 @@ clusters = {
 |------|-------------|:----:|---------|:--------:|
 |**project_id**| The ID of the project for which the gke is to be configured | string | { } | yes| 
 |**region**| The Google Cloud region | string | "us-central1" | yes | 
-|**create_gke**| Whether to create GKE clusters | bool | false | yes| 
 |**clusters**| GKE cluster configurations | map(object) | { } | yes | 
 |**network**| VPC network name | string | { } | yes| 
 |**subnetwork**| Subnetwork name | string | { } | yes | 
@@ -96,8 +88,8 @@ clusters = {
 ## Output
 | Name | Description |
 |------|-------------|
-|**gke_standard_cluster_names**| Standard GKE cluster names | 
-|**gke_standard_cluster_endpoints**| Standard GKE cluster API endpoints | 
-|**created_service_account_email**|Email of the created service account (if applicable) | 
-|**created_service_account_id**| Account ID of the created service account | 
+|**standard_cluster_names**| Names of all Standard GKE clusters created (non-Autopilot) | 
+|**cluster_endpoints**| Map of standard cluster names to their respective endpoint IPs | 
+|**autopilot_cluster_names**|Names of all Autopilot GKE clusters created | 
+|**autopilot_endpoints**| Map of Autopilot cluster names to their respective endpoint IPs | 
                                                                                                                   
