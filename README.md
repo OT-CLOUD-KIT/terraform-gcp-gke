@@ -5,7 +5,7 @@
   [opstree_homepage]: https://opstree.github.io/
   [opstree_avatar]: https://img.cloudposse.com/150x150/https://github.com/opstree.png
 
-This Terraform configuration provisions multiple Google Kubernetes Engine (GKE) clusters, supporting both Standard and Autopilot modes based on input variables. For Standard clusters, it creates dedicated node pools with customizable machine types, disk sizes, and service accounts. The configuration allows either reusing an existing service account or creating a new one, and assigns all necessary IAM roles such as container.nodeServiceAccount, compute.instanceAdmin.v1, and iam.serviceAccountUser. It also grants GKE control plane permissions to the service account, ensuring proper authentication and operational access.
+This Terraform code creates both standard and Autopilot GKE clusters on GCP based on input variables. It dynamically provisions resources like clusters, node pools, and service accounts depending on the autopilot flag. For standard clusters, it configures private nodes, node pools with taints and labels, and sets up IAM roles. The configuration supports both creating a new service account or using an existing one, making it reusable and flexible.
 
 ## Architecture
 
@@ -38,11 +38,9 @@ project_id = "nw-opstree-dev-landing-zone"
 region     = "us-central1"
 network    = "default"
 subnetwork = "default"
-
 use_existing_sa       = false
 service_account_id    = "gke-sa"
 service_account_email = "" # Leave empty if creating a new SA
-
 service_account_roles = [
   "roles/container.nodeServiceAccount",
   "roles/compute.instanceAdmin.v1",
@@ -51,14 +49,31 @@ service_account_roles = [
 
 clusters = {
   "dev-cluster" = {
-    name               = "dev-cluster"
-    location           = "us-central1-a"
-    initial_node_count = 1
-    autopilot          = false
+    name                 = "dev-cluster"
+    location             = "us-central1-a"
+    initial_node_count   = 1
+    autopilot            = false
+    enable_private_nodes = false
+    master_ipv4_cidr_block = "172.16.0.0/28" # Optional if private cluster
+
     node_config = {
       machine_type = "e2-medium"
       disk_size_gb = 50
       disk_type    = "pd-standard"
+      spot         = false           # Optional, default false
+      labels       = { env = "dev" } # Optional labels
+      taints = [
+        {
+          key    = "dedicated"
+          value  = "gpu"
+          effect = "NO_SCHEDULE"
+        },
+        {
+          key    = "team"
+          value  = "data"
+          effect = "PREFER_NO_SCHEDULE"
+        }
+      ] 
     }
   }
 
@@ -66,6 +81,7 @@ clusters = {
     name      = "autopilot-cluster"
     location  = "us-central1"
     autopilot = true
+    # No node_config block needed for Autopilot
   }
 }
 
