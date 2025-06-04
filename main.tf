@@ -47,6 +47,11 @@ resource "google_container_node_pool" "standard_nodepool" {
 
   node_count = each.value.initial_node_count
 
+  autoscaling {
+    min_node_count = each.value.min_node_count
+    max_node_count = each.value.max_node_count
+  }
+
   node_config {
     machine_type    = each.value.node_config.machine_type
     disk_size_gb    = each.value.node_config.disk_size_gb
