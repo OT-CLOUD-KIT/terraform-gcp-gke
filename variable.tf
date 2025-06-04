@@ -4,6 +4,8 @@ variable "clusters" {
     name                   = string
     location               = string
     initial_node_count     = optional(number)
+    min_node_count         = optional(number)
+    max_node_count         = optional(number)
     autopilot              = bool
     enable_private_nodes   = optional(bool, false)
     master_ipv4_cidr_block = optional(string)
