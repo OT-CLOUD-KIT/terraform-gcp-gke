@@ -5,7 +5,7 @@
   [opstree_homepage]: https://opstree.github.io/
   [opstree_avatar]: https://img.cloudposse.com/150x150/https://github.com/opstree.png
 
-This Terraform code creates both standard and Autopilot GKE clusters on GCP based on input variables. It dynamically provisions resources like clusters, node pools, and service accounts depending on the autopilot flag. For standard clusters, it configures private nodes, node pools with taints and labels, and sets up IAM roles. The configuration supports both creating a new service account or using an existing one, making it reusable and flexible.
+This Terraform code creates both standard and Autopilot GKE clusters on GCP based on input variables. It dynamically provisions resources like clusters, node pools, and service accounts depending on the autopilot flag. For standard clusters, it configures private nodes, node pools with asg, taints and labels, and sets up IAM roles. The configuration supports both creating a new service account or using an existing one, making it reusable and flexible.
 
 ## Architecture
 
@@ -52,6 +52,8 @@ clusters = {
     name                 = "dev-cluster"
     location             = "us-central1-a"
     initial_node_count   = 1
+    min_node_count         = 1
+    max_node_count         = 1
     autopilot            = false
     enable_private_nodes = false
     master_ipv4_cidr_block = "172.16.0.0/28" # Optional if private cluster
