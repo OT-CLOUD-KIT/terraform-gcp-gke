@@ -3,24 +3,26 @@ variable "clusters" {
   type = map(object({
     name                   = string
     location               = string
-    initial_node_count     = optional(number)
-    min_node_count         = optional(number)
-    max_node_count         = optional(number)
     autopilot              = bool
     enable_private_nodes   = optional(bool, false)
     master_ipv4_cidr_block = optional(string)
-    node_config = optional(object({
-      machine_type = string
-      disk_size_gb = number
-      disk_type    = string
-      spot         = optional(bool, false)
-      labels       = optional(map(string), {})
+    network                = optional(string)
+    subnetwork             = optional(string)
+    initial_node_count     = optional(number, 1) # ✅ add this as optional with default 1
+    node_pools = optional(map(object({
+      min_node_count = number
+      max_node_count = number
+      machine_type   = string
+      disk_size_gb   = number
+      disk_type      = string
+      spot           = optional(bool, false)
+      labels         = optional(map(string), {})
       taints = optional(list(object({
         key    = string
         value  = string
-        effect = string # e.g. "NO_SCHEDULE", "PREFER_NO_SCHEDULE", "NO_EXECUTE"
+        effect = string
       })), [])
-    }))
+    })), {})
   }))
 }
 
