@@ -3,12 +3,11 @@ resource "google_container_cluster" "standard" {
     for k, v in var.clusters : k => v if v.autopilot == false
   }
 
-  name       = each.value.name
-  location   = each.value.location
-  project    = var.project_id
-  network    = lookup(each.value, "network", var.network)
-  subnetwork = lookup(each.value, "subnetwork", var.subnetwork)
-
+  name                     = each.value.name
+  location                 = each.value.location
+  project                  = var.project_id
+  network                  = var.network
+  subnetwork               = var.subnetwork
   remove_default_node_pool = true
   deletion_protection      = false
 
@@ -40,11 +39,11 @@ resource "google_container_node_pool" "standard_nodepool" {
     )
   ]...)
 
-  name     = each.value.np_key
-  location = each.value.cluster_loc
-  cluster  = google_container_cluster.standard[each.value.cluster_key].name
-  project  = var.project_id
-
+  name       = each.value.np_key
+  location   = each.value.cluster_loc
+  cluster    = google_container_cluster.standard[each.value.cluster_key].name
+  project    = var.project_id
+  node_count = each.value.np_val.node_count
   autoscaling {
     min_node_count = each.value.np_val.min_node_count
     max_node_count = each.value.np_val.max_node_count
@@ -54,6 +53,7 @@ resource "google_container_node_pool" "standard_nodepool" {
     machine_type    = each.value.np_val.machine_type
     disk_size_gb    = each.value.np_val.disk_size_gb
     disk_type       = each.value.np_val.disk_type
+    image_type      = each.value.np_val.image_type
     service_account = var.use_existing_sa ? var.service_account_email : google_service_account.gke_sa[0].email
     oauth_scopes    = ["https://www.googleapis.com/auth/cloud-platform"]
 
