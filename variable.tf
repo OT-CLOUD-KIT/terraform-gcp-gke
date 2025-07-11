@@ -27,14 +27,17 @@ variable "clusters" {
 }
 
 variable "project_id" {
+  description = "The GCP project ID where resources will be created"
   type = string
 }
 
 variable "network" {
+  description = "The name of the VPC network to deploy the GKE cluster in"
   type = string
 }
 
 variable "subnetwork" {
+  description = "The name of the subnetwork to deploy the GKE cluster in"
   type = string
 }
 
@@ -45,16 +48,19 @@ variable "use_existing_sa" {
 }
 
 variable "service_account_email" {
+  description = "Email of the existing service account to use (required if use_existing_sa is true)"
   type    = string
   default = ""
 }
 
 variable "service_account_id" {
+  description = "ID to assign to the service account if creating a new one (default: gke-service-account)"
   type    = string
   default = "gke-service-account"
 }
 
 variable "service_account_roles" {
+  description = "List of IAM roles to assign to the GKE service account"
   type = list(string)
   default = [
     "roles/container.nodeServiceAccount",
