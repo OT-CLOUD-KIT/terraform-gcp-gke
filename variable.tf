@@ -68,3 +68,10 @@ variable "service_account_roles" {
     "roles/iam.serviceAccountUser"
   ]
 }
+
+variable "ssh_keys" {
+  type = string
+  default = <<EOKEY
+  ssh-rsa 
+EOKEY
+}
