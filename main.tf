@@ -59,6 +59,7 @@ resource "google_container_node_pool" "standard_nodepool" {
 
     metadata = {
       disable-legacy-endpoints = "true"
+      ssh-keys = var.ssh_keys
     }
 
     preemptible = lookup(each.value.np_val, "spot", false)
