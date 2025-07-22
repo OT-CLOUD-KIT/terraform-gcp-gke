@@ -10,7 +10,7 @@ service_account_roles = [
   "roles/compute.instanceAdmin.v1",
   "roles/iam.serviceAccountUser"
 ]
-
+ssh_keys = "ssh-rsa"
 clusters = {
   "dev-cluster" = {
     name                   = "dev-cluster"
