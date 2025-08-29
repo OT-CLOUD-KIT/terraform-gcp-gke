@@ -1,7 +1,11 @@
-project_id            = "landing-zone"
+project_id            = "project-id"
 region                = "us-central1"
 network               = "default"
 subnetwork            = "default"
+auto_repair           = true
+auto_upgrade          = true
+ssh_keys              = "ssh-rsa"
+release_channel       = "REGULAR"
 use_existing_sa       = false
 service_account_id    = "gke-sa"
 service_account_email = "" # Leave empty if creating a new SA
@@ -10,7 +14,7 @@ service_account_roles = [
   "roles/compute.instanceAdmin.v1",
   "roles/iam.serviceAccountUser"
 ]
-ssh_keys = "ssh-rsa"
+
 clusters = {
   "dev-cluster" = {
     name                   = "dev-cluster"

@@ -1,3 +1,9 @@
+variable "region" {
+  description = "The Google Cloud region"
+  type        = string
+  default = "us-central-1"
+}
+
 variable "clusters" {
   description = "Map of GKE cluster configurations"
   type = map(object({
@@ -26,19 +32,45 @@ variable "clusters" {
   }))
 }
 
+variable "ssh_keys" {
+  description = "Public SSH keys to add to nodes for access."
+  type        = string
+  default     = <<EOKEY
+  ssh-rsa 
+EOKEY
+}
+
+variable "release_channel" {
+  description = "GKE release channel: RAPID, REGULAR, or STABLE"
+  type        = string
+  default     = "REGULAR"
+}
+
 variable "project_id" {
-  description = "The GCP project ID where resources will be created"
-  type = string
+  description = "The GCP project ID where GKE clusters will be deployed."
+  type        = string
 }
 
 variable "network" {
-  description = "The name of the VPC network to deploy the GKE cluster in"
-  type = string
+  description = "VPC network to be used for GKE clusters."
+  type        = string
 }
 
 variable "subnetwork" {
-  description = "The name of the subnetwork to deploy the GKE cluster in"
-  type = string
+  description = "Subnetwork to be used for GKE clusters."
+  type        = string
+}
+
+variable "auto_repair" {
+  description = "Whether node auto-repair is enabled for node pools."
+  type        = bool
+  default     = true
+}
+
+variable "auto_upgrade" {
+  description = "Whether node auto-upgrade is enabled for node pools."
+  type        = bool
+  default     = true
 }
 
 variable "use_existing_sa" {
@@ -48,30 +80,23 @@ variable "use_existing_sa" {
 }
 
 variable "service_account_email" {
-  description = "Email of the existing service account to use (required if use_existing_sa is true)"
-  type    = string
-  default = ""
+  description = "Email of an existing service account to be used if use_existing_sa is true."
+  type        = string
+  default     = ""
 }
 
 variable "service_account_id" {
-  description = "ID to assign to the service account if creating a new one (default: gke-service-account)"
-  type    = string
-  default = "gke-service-account"
+  description = "Account ID for the new GKE service account to create if use_existing_sa is false."
+  type        = string
+  default     = "gke-service-account"
 }
 
 variable "service_account_roles" {
-  description = "List of IAM roles to assign to the GKE service account"
-  type = list(string)
+  description = "List of IAM roles to assign to the GKE service account if it is being created."
+  type        = list(string)
   default = [
     "roles/container.nodeServiceAccount",
     "roles/compute.instanceAdmin.v1",
     "roles/iam.serviceAccountUser"
   ]
-}
-
-variable "ssh_keys" {
-  type = string
-  default = <<EOKEY
-  ssh-rsa 
-EOKEY
 }

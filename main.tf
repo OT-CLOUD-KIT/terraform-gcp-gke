@@ -13,6 +13,10 @@ resource "google_container_cluster" "standard" {
 
   initial_node_count = each.value.initial_node_count
 
+  release_channel {
+    channel = var.release_channel
+  }
+
   dynamic "private_cluster_config" {
     for_each = lookup(each.value, "enable_private_nodes", false) ? [1] : []
     content {
@@ -59,7 +63,7 @@ resource "google_container_node_pool" "standard_nodepool" {
 
     metadata = {
       disable-legacy-endpoints = "true"
-      ssh-keys = var.ssh_keys
+      ssh-keys                 = var.ssh_keys
     }
 
     preemptible = lookup(each.value.np_val, "spot", false)
@@ -81,8 +85,8 @@ resource "google_container_node_pool" "standard_nodepool" {
   }
 
   management {
-    auto_repair  = true
-    auto_upgrade = true
+    auto_repair  = var.auto_repair
+    auto_upgrade = var.auto_upgrade
   }
 
   upgrade_settings {
