@@ -3,71 +3,74 @@ resource "google_container_cluster" "standard" {
     for k, v in var.clusters : k => v if v.autopilot == false
   }
 
-  name       = each.value.name
-  location   = each.value.location
-  project    = var.project_id
-  network    = var.network
-  subnetwork = var.subnetwork
-
-  initial_node_count       = each.value.initial_node_count
+  name                     = each.value.name
+  location                 = each.value.location
+  project                  = var.project_id
+  network                  = var.network
+  subnetwork               = var.subnetwork
   remove_default_node_pool = true
   deletion_protection      = false
 
+  initial_node_count = each.value.initial_node_count
+
+  release_channel {
+    channel = var.release_channel
+  }
+
   dynamic "private_cluster_config" {
     for_each = lookup(each.value, "enable_private_nodes", false) ? [1] : []
-
     content {
       enable_private_nodes    = true
       enable_private_endpoint = false
       master_ipv4_cidr_block  = each.value.master_ipv4_cidr_block
     }
   }
-
-  node_config {
-    machine_type    = each.value.node_config.machine_type
-    disk_size_gb    = each.value.node_config.disk_size_gb
-    disk_type       = each.value.node_config.disk_type
-    service_account = var.use_existing_sa ? var.service_account_email : google_service_account.gke_sa[0].email
-
-    metadata = {
-      disable-legacy-endpoints = "true"
-    }
-  }
 }
 
 resource "google_container_node_pool" "standard_nodepool" {
-  for_each = {
-    for k, v in var.clusters : k => v if v.autopilot == false
-  }
+  for_each = merge([
+    for cluster_key, cluster_val in var.clusters : (
+      cluster_val.autopilot == false ?
+      { for np_key, np_val in lookup(cluster_val, "node_pools", {}) :
+        "${cluster_key}-${np_key}" => {
+          cluster_key  = cluster_key
+          cluster_name = cluster_val.name
+          cluster_loc  = cluster_val.location
+          np_key       = np_key
+          np_val       = np_val
+        }
+      } : {}
+    )
+  ]...)
 
-  name     = "${each.value.name}-node-pool"
-  location = each.value.location
-  cluster  = google_container_cluster.standard[each.key].name
-  project  = var.project_id
-
-  node_count = each.value.initial_node_count
-
+  name       = each.value.np_key
+  location   = each.value.cluster_loc
+  cluster    = google_container_cluster.standard[each.value.cluster_key].name
+  project    = var.project_id
+  node_count = each.value.np_val.node_count
   autoscaling {
-    min_node_count = each.value.min_node_count
-    max_node_count = each.value.max_node_count
+    min_node_count = each.value.np_val.min_node_count
+    max_node_count = each.value.np_val.max_node_count
   }
 
   node_config {
-    machine_type    = each.value.node_config.machine_type
-    disk_size_gb    = each.value.node_config.disk_size_gb
-    disk_type       = each.value.node_config.disk_type
+    machine_type    = each.value.np_val.machine_type
+    disk_size_gb    = each.value.np_val.disk_size_gb
+    disk_type       = each.value.np_val.disk_type
+    image_type      = each.value.np_val.image_type
     service_account = var.use_existing_sa ? var.service_account_email : google_service_account.gke_sa[0].email
     oauth_scopes    = ["https://www.googleapis.com/auth/cloud-platform"]
 
     metadata = {
       disable-legacy-endpoints = "true"
+      ssh-keys                 = var.ssh_keys
     }
 
-    preemptible = lookup(each.value.node_config, "spot", false)
-    labels      = lookup(each.value.node_config, "labels", {})
+    preemptible = lookup(each.value.np_val, "spot", false)
+    labels      = lookup(each.value.np_val, "labels", {})
 
     dynamic "taint" {
-      for_each = lookup(each.value.node_config, "taints", [])
+      for_each = lookup(each.value.np_val, "taints", [])
       content {
         key    = taint.value.key
         value  = taint.value.value
@@ -75,26 +78,15 @@ resource "google_container_node_pool" "standard_nodepool" {
       }
     }
 
-    dynamic "shielded_instance_config" {
-      for_each = [1]
-      content {
-        enable_secure_boot          = true
-        enable_integrity_monitoring = true
-      }
-    }
-
-    dynamic "guest_accelerator" {
-      for_each = []
-      content {
-        type  = ""
-        count = 0
-      }
+    shielded_instance_config {
+      enable_secure_boot          = true
+      enable_integrity_monitoring = true
     }
   }
 
   management {
-    auto_repair  = true
-    auto_upgrade = true
+    auto_repair  = var.auto_repair
+    auto_upgrade = var.auto_upgrade
   }
 
   upgrade_settings {
@@ -111,8 +103,8 @@ resource "google_container_cluster" "autopilot" {
   name                = each.value.name
   location            = each.value.location
   project             = var.project_id
-  network             = var.network
-  subnetwork          = var.subnetwork
+  network             = lookup(each.value, "network", var.network)
+  subnetwork          = lookup(each.value, "subnetwork", var.subnetwork)
   deletion_protection = false
   enable_autopilot    = true
 }

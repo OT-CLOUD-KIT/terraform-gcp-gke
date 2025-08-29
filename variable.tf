@@ -1,39 +1,76 @@
+variable "region" {
+  description = "The Google Cloud region"
+  type        = string
+  default = "us-central-1"
+}
+
 variable "clusters" {
   description = "Map of GKE cluster configurations"
   type = map(object({
     name                   = string
     location               = string
-    initial_node_count     = optional(number)
-    min_node_count         = optional(number)
-    max_node_count         = optional(number)
     autopilot              = bool
     enable_private_nodes   = optional(bool, false)
     master_ipv4_cidr_block = optional(string)
-    node_config = optional(object({
-      machine_type = string
-      disk_size_gb = number
-      disk_type    = string
-      spot         = optional(bool, false)
-      labels       = optional(map(string), {})
+    initial_node_count     = optional(number, 1) 
+    node_pools = optional(map(object({
+      min_node_count = number
+      max_node_count = number
+      node_count     = optional(number) 
+      machine_type   = string
+      disk_size_gb   = number
+      disk_type      = string
+      image_type     = optional(string) 
+      spot           = optional(bool, false)
+      labels         = optional(map(string), {})
       taints = optional(list(object({
         key    = string
         value  = string
-        effect = string # e.g. "NO_SCHEDULE", "PREFER_NO_SCHEDULE", "NO_EXECUTE"
+        effect = string
       })), [])
-    }))
+    })), {})
   }))
 }
 
+variable "ssh_keys" {
+  description = "Public SSH keys to add to nodes for access."
+  type        = string
+  default     = <<EOKEY
+  ssh-rsa 
+EOKEY
+}
+
+variable "release_channel" {
+  description = "GKE release channel: RAPID, REGULAR, or STABLE"
+  type        = string
+  default     = "REGULAR"
+}
+
 variable "project_id" {
-  type = string
+  description = "The GCP project ID where GKE clusters will be deployed."
+  type        = string
 }
 
 variable "network" {
-  type = string
+  description = "VPC network to be used for GKE clusters."
+  type        = string
 }
 
 variable "subnetwork" {
-  type = string
+  description = "Subnetwork to be used for GKE clusters."
+  type        = string
+}
+
+variable "auto_repair" {
+  description = "Whether node auto-repair is enabled for node pools."
+  type        = bool
+  default     = true
+}
+
+variable "auto_upgrade" {
+  description = "Whether node auto-upgrade is enabled for node pools."
+  type        = bool
+  default     = true
 }
 
 variable "use_existing_sa" {
@@ -43,17 +80,20 @@ variable "use_existing_sa" {
 }
 
 variable "service_account_email" {
-  type    = string
-  default = ""
+  description = "Email of an existing service account to be used if use_existing_sa is true."
+  type        = string
+  default     = ""
 }
 
 variable "service_account_id" {
-  type    = string
-  default = "gke-service-account"
+  description = "Account ID for the new GKE service account to create if use_existing_sa is false."
+  type        = string
+  default     = "gke-service-account"
 }
 
 variable "service_account_roles" {
-  type = list(string)
+  description = "List of IAM roles to assign to the GKE service account if it is being created."
+  type        = list(string)
   default = [
     "roles/container.nodeServiceAccount",
     "roles/compute.instanceAdmin.v1",
